@@ -1,8 +1,13 @@
 package controllers
 
 import (
+	"context"
+	"encoding/json"
+	"log"
 	"net/http"
+	"time"
 
+	"github.com/Afomiat/ChatApp/domain"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/Afomiat/ChatApp/usecase"
@@ -31,15 +36,27 @@ func (cc *ChatController) HandleWebSocket(c *gin.Context) {
 	defer conn.Close()
 
 	cc.Usecase.RegisterClient(conn)
+	defer cc.Usecase.RemoveClient(conn)
 
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			cc.Usecase.RemoveClient(conn)
 			break
+		}
+
+		var message domain.Message
+		if err := json.Unmarshal(msg, &message); err != nil {
+			log.Println("Failed to unmarshal message:", err)
+			continue 
+		}
+
+		message.Timestamp = time.Now()
+
+		if err := cc.Usecase.SaveMessage(context.Background(), &message); err != nil {
+			log.Println("Failed to save message:", err)
+			continue 
 		}
 
 		cc.Usecase.BroadcastMessage(msg)
 	}
 }
-

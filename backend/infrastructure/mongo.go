@@ -18,7 +18,14 @@ func ConnectMongo(uri string) *mongo.Database {
 	defer cancel()
 	err = client.Connect(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to connect to MongoDB:", err)
 	}
+
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal("Failed to ping MongoDB:", err)
+	}
+
+	log.Println("Successfully connected to MongoDB!")
 	return client.Database("chatapp")
 }
