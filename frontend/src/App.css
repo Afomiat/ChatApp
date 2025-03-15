@@ -1,53 +1,104 @@
+/* Registration page styles */
+.registration-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.registration-container h1 {
+  margin-bottom: 20px;
+}
+
+.registration-container form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.registration-container input {
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 200px;
+}
+
+.registration-container button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Chat page styles */
 .chat-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    padding: 20px;
-    background-color: #f5f5f5;
-  }
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 20px;
   
-  .messages-container {
-    flex: 1;
-    overflow-y: auto;
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-  }
+}
+
+.messages-container {
   
-  .message {
-    padding: 10px;
-    margin: 5px;
-    border-radius: 10px;
-    max-width: 60%;
-  }
-  
-  .message.me {
-    background-color: #dcf8c6;
-    align-self: flex-end; 
-    margin-left: auto; 
-  }
-  
-  .message.other {
-    background-color: #fff;
-    align-self: flex-start; 
-  }
-  .input-container {
-    display: flex;
-  }
-  
-  .input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    margin-right: 10px;
-  }
-  
-  .button {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
+  flex: 1;
+  overflow-y: auto;
+  /* overflow-x: hidden; */
+  margin-bottom: 20px;
+}
+
+.message {
+  padding-top: 17px;
+  padding-left: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  width: 150px;
+  height: 40px;
+  /* max-width: 60%; */
+}
+
+.message.me {
+  background-color: #dcf8c6;
+  /* align-self: flex-end; */
+  /* align-self: flex-start; */
+  margin-left: 84%;
+
+}
+
+.message.other {
+  background-color: #fff;
+  align-self: flex-start;
+}
+
+.input-container {
+  display: flex;
+}
+
+.input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-right: 10px;
+}
+
+.button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.strong {
+  font-weight: bold;
+  border-radius: 20px;
+  padding: 8px;
+  background-color: #e6dbac;
+}
