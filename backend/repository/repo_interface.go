@@ -8,4 +8,5 @@ import (
 type ChatRepository interface {
     SaveMessage(ctx context.Context, message *domain.Message) error
     GetMessages(ctx context.Context) ([]*domain.Message, error)
+    EnsureCollectionExists(ctx context.Context) error
 }
