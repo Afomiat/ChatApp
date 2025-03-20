@@ -10,24 +10,24 @@ import (
 )
 
 func SetupRoutes(r *gin.Engine, db *mongo.Database) {
-	// Enable CORS
 	r.Use(cors.Default())
 
-	// Initialize repository, usecase, and controller
 	chatRepo := repository.NewChatRepository(db)
-	chatUsecase := usecase.NewChatUsecase(chatRepo)
-	chatController := controllers.NewChatController(chatUsecase)
+	userRepo := repository.NewUserRepository(db)
 
-	// WebSocket route for real-time messaging
+	chatUsecase := usecase.NewChatUsecase(chatRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo)
+
+	chatController := controllers.NewChatController(chatUsecase)
+	userController := controllers.NewUserController(userUsecase)
+
 	r.GET("/ws", chatController.HandleWebSocket)
 
-	// HTTP GET route to fetch all messages
-	r.GET("/messages", func(c *gin.Context) {
-		messages, err := chatUsecase.GetMessages(c.Request.Context())
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to fetch messages"})
-			return
-		}
-		c.JSON(200, messages)
-	})
+	r.GET("/messages", chatController.GetMessages)
+
+	r.POST("/register", userController.RegisterUser)
+
+	r.GET("/users", userController.GetAllUsers)
+	r.POST("/login", userController.LoginUser)
+
 }

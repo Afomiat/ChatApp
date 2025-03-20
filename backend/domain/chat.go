@@ -1,9 +1,18 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Message struct {
-    Sender    string    `json:"sender" bson:"sender"`
-    Content   string    `json:"content" bson:"content"`
-    Timestamp time.Time `json:"timestamp" bson:"timestamp"`
+	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"` 
+
+	Sender    string    `json:"sender" bson:"sender"`
+	Recipient string    `json:"recipient" bson:"recipient"`
+	Content   string    `json:"content" bson:"content"`
+	Timestamp time.Time `json:"timestamp" bson:"timestamp"`
+	Delivered bool      `json:"delivered" bson:"delivered"` 
+
 }
