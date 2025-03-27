@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/Afomiat/ChatApp/domain"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,71 +10,56 @@ import (
 )
 
 type UserRepository struct {
-	collection *mongo.Collection
+    db *mongo.Database
 }
 
-func NewUserRepository(db *mongo.Database) *UserRepository {
-	repo := &UserRepository{
-		collection: db.Collection("users"),
-	}
-
-	// Ensure the collection exists
-	if err := repo.EnsureCollectionExists(context.Background()); err != nil {
-		log.Fatalf("Failed to ensure collection exists: %v", err)
-	}
-
-	return repo
+func NewUserRepository(db *mongo.Database) *UserRepository { // Return pointer
+    return &UserRepository{db: db}
 }
 
-func (r *UserRepository) EnsureCollectionExists(ctx context.Context) error {
-	collections, err := r.collection.Database().ListCollectionNames(ctx, bson.M{"name": "users"})
+func (ur *UserRepository) SaveUser(user domain.User) error { // Receiver is pointer
+    _, err := ur.db.Collection("users").InsertOne(context.Background(), user)
+    return err
+}
+
+func (ur *UserRepository) FindUserByUsername(username string) (*domain.User, error) {
+    var user domain.User
+    err := ur.db.Collection("users").FindOne(context.Background(), bson.M{"username": username}).Decode(&user)
+    if err != nil {
+        return nil, fmt.Errorf("user not found")
+    }
+    return &user, nil
+}
+
+func (ur *UserRepository) FindAllUsers() ([]domain.User, error) {
+    var users []domain.User
+    cursor, err := ur.db.Collection("users").Find(context.Background(), bson.M{})
+    if err != nil {
+        return nil, err
+    }
+
+    if err = cursor.All(context.Background(), &users); err != nil {
+        return nil, err
+    }
+
+    return users, nil
+}
+
+
+func (ur *UserRepository) UpdateUserStatus(userID string, online bool) error {
+    filter := bson.M{"_id": userID}
+    update := bson.M{"$set": bson.M{"online": online}}
+
+    _, err := ur.db.Collection("users").UpdateOne(context.Background(), filter, update)
 	if err != nil {
-		log.Printf("Error listing collections: %v", err)
-		return err
+		return fmt.Errorf("failed to update user status: %w", err)
 	}
 
-	if len(collections) == 0 {
-		log.Println("Collection 'users' does not exist. Creating...")
-		err := r.collection.Database().CreateCollection(ctx, "users")
-		if err != nil {
-			log.Printf("Error creating collection: %v", err)
-			return err
-		}
-		log.Println("Collection 'users' created successfully.")
-	}
-
-	return nil
-}
-
-
-
-// RegisterUser stores a new user in the database
-func (r *UserRepository) RegisterUser(ctx context.Context, user *domain.User) error {
-	_, err := r.collection.InsertOne(ctx, user)
-	return err
-}
-
-// GetUserByUsername fetches a user by their username
-func (r *UserRepository) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
-	var user domain.User
-	err := r.collection.FindOne(ctx, bson.M{"username": username}).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
-// GetAllUsers fetches all users from the database
-func (r *UserRepository) GetAllUsers(ctx context.Context) ([]domain.User, error) {
-	cursor, err := r.collection.Find(ctx, bson.M{})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var users []domain.User
-	if err = cursor.All(ctx, &users); err != nil {
-		return nil, err
-	}
-	return users, nil
+	// Verify if the user exists after updating the status
+	// updateduser, err := ur.FindUserByUsername(userID)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to verify updated user: %w", err)
+	// }
+	// fmt.Println("Updated user status.................................: ", updateduser)
+    return err
 }

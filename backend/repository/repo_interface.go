@@ -1,15 +1,17 @@
 package repository
 
 import (
-    "context"
-    "github.com/Afomiat/ChatApp/domain"
+	"github.com/Afomiat/ChatApp/domain"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ChatRepository interface {
-	SaveMessage(ctx context.Context, message *domain.Message) error
-	GetMessages(ctx context.Context) ([]*domain.Message, error)
-	GetMessagesBetweenUsers(ctx context.Context, user1, user2 string) ([]*domain.Message, error)
-	EnsureCollectionExists(ctx context.Context) error
-	GetUndeliveredMessages(ctx context.Context, userID string) ([]*domain.Message, error)
-	MarkMessageAsDelivered(ctx context.Context, messageID string) error
+    SaveMessage(message domain.Message) error
+    GetMessages(userID string) ([]domain.Message, error)
+    FindMessagesBetweenUsers(user1, user2 string) ([]domain.Message, error)
+    UpdateUserStatus(userID string, online bool) error
+    GetUndeliveredMessages(filter interface{}) (*mongo.Cursor, error)
+    FindMessages(filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error)
+
 }

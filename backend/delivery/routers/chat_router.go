@@ -1,33 +1,27 @@
 package routers
 
 import (
-	"github.com/Afomiat/ChatApp/delivery/controllers"
-	"github.com/Afomiat/ChatApp/repository"
-	"github.com/Afomiat/ChatApp/usecase"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
+    "github.com/gin-gonic/gin"
+    "github.com/Afomiat/ChatApp/delivery/controllers"
+    "github.com/Afomiat/ChatApp/repository"
+    "github.com/Afomiat/ChatApp/usecase"
+    "github.com/Afomiat/ChatApp/infrastructure"
+    "go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupRoutes(r *gin.Engine, db *mongo.Database) {
-	r.Use(cors.Default())
+// SetupChatRoutes initializes the WebSocket route for chat functionality.
+func SetupChatRoutes(r *gin.Engine, db *mongo.Database) {
+    // Initialize the connection manager to track WebSocket connections.
+    connManager := infrastructure.NewConnectionManager()
+    chatRepo := repository.NewChatRepository(db)
 
-	chatRepo := repository.NewChatRepository(db)
-	userRepo := repository.NewUserRepository(db)
+    chatUsecase := usecase.NewChatUsecase(chatRepo)
 
-	chatUsecase := usecase.NewChatUsecase(chatRepo)
-	userUsecase := usecase.NewUserUsecase(userRepo)
+    // Initialize the chat controller with the chat use case and connection manager.
+    chatController := controllers.NewChatController(chatUsecase, connManager)
 
-	chatController := controllers.NewChatController(chatUsecase)
-	userController := controllers.NewUserController(userUsecase)
-
-	r.GET("/ws", chatController.HandleWebSocket)
-
-	r.GET("/messages", chatController.GetMessages)
-
-	r.POST("/register", userController.RegisterUser)
-
-	r.GET("/users", userController.GetAllUsers)
-	r.POST("/login", userController.LoginUser)
+    // Define the WebSocket route.
+    r.GET("/ws", chatController.HandleWebSocket)
+    r.GET("/messages", chatController.GetMessagesBetweenUsers)
 
 }

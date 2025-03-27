@@ -3,100 +3,81 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/Afomiat/ChatApp/domain"
 	"github.com/Afomiat/ChatApp/repository"
-	"github.com/gorilla/websocket"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ChatUsecase struct {
-	Clients    map[*websocket.Conn]string 
-	Users      map[string]*websocket.Conn 
-	Mutex      sync.Mutex
-	Repository repository.ChatRepository
-
+    chatRepo repository.ChatRepository
 }
 
-func NewChatUsecase(repo repository.ChatRepository) *ChatUsecase {
-	return &ChatUsecase{
-		Clients:    make(map[*websocket.Conn]string),
-		Users:      make(map[string]*websocket.Conn),
-		Repository: repo,
-	}
+func NewChatUsecase(chatRepo repository.ChatRepository) *ChatUsecase {
+    return &ChatUsecase{chatRepo: chatRepo}
 }
 
-func (cu *ChatUsecase) RegisterClient(conn *websocket.Conn, userID string) {
-	cu.Mutex.Lock()
-	defer cu.Mutex.Unlock()
-	cu.Clients[conn] = userID
-	cu.Users[userID] = conn
+func (uc *ChatUsecase) HandleMessage(message domain.Message) error {
+    return uc.chatRepo.SaveMessage(message)
 }
 
-func (cu *ChatUsecase) RemoveClient(conn *websocket.Conn) {
-	cu.Mutex.Lock()
-	defer cu.Mutex.Unlock()
-	userID := cu.Clients[conn]
-	delete(cu.Clients, conn)
-	delete(cu.Users, userID)
+func (uc *ChatUsecase) GetMessagesBetweenUsers(user1, user2 string) ([]domain.Message, error) {
+    return uc.chatRepo.FindMessagesBetweenUsers(user1, user2)
 }
 
+func (uc *ChatUsecase) UpdateUserStatus(userID string, online bool) error {
+    fmt.Println("handler .. enterd *********************")
 
+    return uc.chatRepo.UpdateUserStatus(userID, online)
+}
 
-func (cu *ChatUsecase) SendPrivateMessage(senderID, recipientID, message string) error {
-    cu.Mutex.Lock()
-    defer cu.Mutex.Unlock()
-
-    msg := &domain.Message{
-        Sender:    senderID,
-        Recipient: recipientID,
-        Content:   message,
-        Timestamp: time.Now(),
-        Delivered: false, 
-    }
-    if err := cu.Repository.SaveMessage(context.Background(), msg); err != nil {
-        return fmt.Errorf("failed to save message: %v", err)
+func (uc *ChatUsecase) GetUndeliveredMessages(userID string) ([]domain.Message, error) {
+    filter := bson.M{
+        "recipient": userID,
+        "delivered": false,
+        // Optional: Add time window
+        "timestamp": bson.M{"$gt": time.Now().Add(-30 * 24 * time.Hour)},
     }
 
-    recipientConn, ok := cu.Users[recipientID]
-    if !ok {
-        // Recipient is offline, message is saved in the database
-        return nil
+    cursor, err := uc.chatRepo.GetUndeliveredMessages(filter)
+    if err != nil {
+        return nil, fmt.Errorf("failed to query messages: %w", err)
+    }
+    defer cursor.Close(context.Background())
+
+    var messages []domain.Message
+    if err := cursor.All(context.Background(), &messages); err != nil {
+        return nil, fmt.Errorf("failed to decode messages: %w", err)
     }
 
-    // Send the message to the recipient
-    if err := recipientConn.WriteJSON(map[string]interface{}{
-        "type":    "privateMessage",
-        "sender":  senderID,
-        "content": message,
-    }); err != nil {
-        return fmt.Errorf("failed to send message to recipient: %v", err)
+    return messages, nil
+}
+
+func (uc *ChatUsecase) GetConversation(user1, user2 string, limit int) ([]domain.Message, error) {
+  
+    filter := bson.M{
+        "$or": []bson.M{
+            {"sender": user1, "recipient": user2},
+            {"sender": user2, "recipient": user1},
+        },
+    }
+    
+    opts := options.Find().
+        SetSort(bson.D{{Key: "timestamp", Value: -1}}). // Newest first
+        SetLimit(int64(limit))
+    
+    cursor, err := uc.chatRepo.FindMessages(filter, opts)
+    if err != nil {
+        return nil, err
+    }
+    defer cursor.Close(context.Background())
+
+    var messages []domain.Message
+    if err := cursor.All(context.Background(), &messages); err != nil {
+        return nil, err
     }
 
-    // Mark the message as delivered
-    if err := cu.Repository.MarkMessageAsDelivered(context.Background(), msg.ID.Hex()); err != nil {
-        return fmt.Errorf("failed to mark message as delivered: %v", err)
-    }
-
-    return nil
+    return messages, nil
 }
-func (cu *ChatUsecase) SaveMessage(ctx context.Context, message *domain.Message) error {
-	return cu.Repository.SaveMessage(ctx, message)
-}
-
-func (cu *ChatUsecase) GetMessages(ctx context.Context) ([]*domain.Message, error) {
-	return cu.Repository.GetMessages(ctx)
-}
-
-func (cu *ChatUsecase) GetMessagesBetweenUsers(ctx context.Context, user1, user2 string) ([]*domain.Message, error) {
-	return cu.Repository.GetMessagesBetweenUsers(ctx, user1, user2)
-}
-
-func (cu *ChatUsecase) GetUndeliveredMessages(ctx context.Context, userID string) ([]*domain.Message, error) {
-    return cu.Repository.GetUndeliveredMessages(ctx, userID)
-}
-
-// func (cu *ChatUsecase) MarkMessageAsDelivered(ctx context.Context, messageID string) error {
-// 	return cu.Repository.MarkMessageAsDelivered(ctx, messageID)
-// }
