@@ -10,7 +10,7 @@ import (
 )
 
 // SetupChatRoutes initializes the WebSocket route for chat functionality.
-func SetupChatRoutes(r *gin.Engine, db *mongo.Database) {
+func NewChatRouter(r *gin.Engine, db *mongo.Database) {
     // Initialize the connection manager to track WebSocket connections.
     connManager := infrastructure.NewConnectionManager()
     chatRepo := repository.NewChatRepository(db)

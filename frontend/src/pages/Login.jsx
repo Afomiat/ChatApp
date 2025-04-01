@@ -5,7 +5,7 @@ import '../styles/Login.css';
 
 export default function Login() {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -26,29 +26,33 @@ export default function Login() {
 
     try {
       // Clear any previous session
-      localStorage.removeItem('currentUserID');
-      localStorage.removeItem('username');
+      localStorage.clear();
 
       const response = await axios.post('http://localhost:8080/login', {
-        username: formData.username,
+        email: formData.email,
         password: formData.password
       });
 
-      if (!response.data?.user?.id) {
-        throw new Error('Invalid server response');
+      console.log('Login response:', response.data); // Debug log
+
+      // Check for successful response - UPDATED CONDITION
+      if (response.status === 200 && response.data.user) {
+        // Store user data
+        localStorage.setItem('currentUserID', response.data.user.id);
+        localStorage.setItem('username', response.data.user.username);
+        localStorage.setItem('email', response.data.user.email);
+        localStorage.setItem('isAuthenticated', 'true'); // Add this line
+
+        console.log('Navigating to /chat'); // Debug log
+
+        navigate('/chat', { replace: true }); // Added replace option
+      } else {
+        throw new Error(response.data?.error || 'Login failed');
       }
-
-      // Store user data only after successful authentication
-      localStorage.setItem('currentUserID', response.data.user.id);
-      localStorage.setItem('username', response.data.user.username);
-
-      // Navigate to chat after successful auth
-      navigate('/chat');
     } catch (err) {
-      localStorage.removeItem('currentUserID');
-      localStorage.removeItem('username');
-      setError(err.response?.data?.error || 'Login failed. Please try again.');
-      console.error('Login error:', err);
+      console.error('Login error details:', err); // More detailed error log
+      localStorage.clear();
+      setError(err.response?.data?.error || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
@@ -61,11 +65,11 @@ export default function Login() {
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleLogin}>
           <input
-            type="text"
-            name="username"
-            value={formData.username}
+            type="email"
+            name="email"
+            value={formData.email}
             onChange={handleChange}
-            placeholder="Username"
+            placeholder="Email"
             required
             disabled={isLoading}
           />
@@ -86,6 +90,9 @@ export default function Login() {
             {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <p className="register-link">
+          Don't have an account? <span onClick={() => navigate('/register')} className="register-text">Register</span>
+        </p>
       </div>
     </div>
   );

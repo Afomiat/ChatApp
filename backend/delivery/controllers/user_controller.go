@@ -1,50 +1,62 @@
 package controllers
 
 import (
-    "github.com/gin-gonic/gin"
-    "github.com/Afomiat/ChatApp/domain"
-    "github.com/Afomiat/ChatApp/usecase"
-    "net/http"
+	"log"
+	"net/http"
+
+	"github.com/Afomiat/ChatApp/domain"
+	"github.com/Afomiat/ChatApp/infrastructure"
+	"github.com/Afomiat/ChatApp/usecase"
+	"github.com/gin-gonic/gin"
 )
 
 type UserController struct {
     userUsecase *usecase.UserUsecase
+    env         *infrastructure.Env
 }
 
 func NewUserController(userUsecase *usecase.UserUsecase) *UserController {
-    return &UserController{userUsecase: userUsecase}
+    env := infrastructure.NewEnv()
+
+    return &UserController{
+        userUsecase: userUsecase,
+        env: env,
+    }
 }
 
-func (uc *UserController) RegisterUser(c *gin.Context) {
-    var user domain.User
-    if err := c.ShouldBindJSON(&user); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
-        return
-    }
 
-    if err := uc.userUsecase.RegisterUser(user); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
-
-    c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "user": user})
-}
 
 func (uc *UserController) LoginUser(c *gin.Context) {
     var credentials domain.User
 
     if err := c.ShouldBindJSON(&credentials); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+        log.Printf("Invalid login request: %v", err)
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
         return
     }
 
-    user, err := uc.userUsecase.LoginUser(credentials.Username, credentials.Password)
+    authLogin := domain.AuthLogin{
+        Email:    credentials.Email,
+        Password: credentials.Password,
+    }
+
+    user, err := uc.userUsecase.AuthenticateUser(c, &authLogin)
     if err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+        log.Printf("Login failed for %s: %v", authLogin.Email, err)
+        // Return generic error message for security
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
         return
     }
 
-    c.JSON(http.StatusOK, gin.H{"message": "Login successful", "user": user})
+    log.Printf("User %s logged in successfully", user.Email)
+    c.JSON(http.StatusOK, gin.H{
+        "message": "Login successful",
+        "user": gin.H{
+            "id":       user.ID,
+            "username": user.Username,
+            "email":    user.Email,
+        },
+    })
 }
 
 func (uc *UserController) GetAllUsers(c *gin.Context) {

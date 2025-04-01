@@ -8,13 +8,13 @@ import (
     "go.mongodb.org/mongo-driver/mongo"
 )
 
-func SetupUserRoutes(r *gin.Engine, db *mongo.Database) {
+func NewUserRouter(r *gin.Engine, db *mongo.Database) {
     userRepo := repository.NewUserRepository(db) // Returns pointer
     userUsecase := usecase.NewUserUsecase(userRepo) // Pass pointer
     userController := controllers.NewUserController(userUsecase)
 
     // User registration route
-    r.POST("/register", userController.RegisterUser)
+    // r.POST("/register", userController.RegisterUser)
 	r.POST("/login", userController.LoginUser)
 	r.GET("/users", userController.GetAllUsers)
 	

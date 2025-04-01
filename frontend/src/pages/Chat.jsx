@@ -26,7 +26,7 @@ const Chat = () => {
       try {
         setIsLoading(true);
         const response = await axios.get('http://localhost:8080/users');
-        setUsers(response.data.users.filter(u => u.id !== currentUser));
+        setUsers(response.data.users.filter(u => u._id !== currentUser));
       } catch (err) {
         console.error('Failed to fetch users', err);
       } finally {
@@ -124,9 +124,9 @@ const Chat = () => {
             <ul>
               {users.map(user => (
                 <li
-                  key={user.id}
-                  className={selectedUser === user.id ? 'active' : ''}
-                  onClick={() => setSelectedUser(user.id)}
+                  key={user._id}
+                  className={selectedUser === user._id ? 'active' : ''}
+                  onClick={() => setSelectedUser(user._id)}
                 >
                   <span className={`user-status ${user.online ? 'online' : 'offline'}`}></span>
                   {user.username}
@@ -142,7 +142,7 @@ const Chat = () => {
         {selectedUser ? (
           <>
             <div className="chat-header">
-              <h3>Chat with {users.find(u => u.id === selectedUser)?.username || 'User'}</h3>
+              <h3>Chat with {users.find(u => u._id === selectedUser)?.username || 'User'}</h3>
             </div>
             <div className="messages-container">
               {messages.length === 0 && !isLoading ? (
