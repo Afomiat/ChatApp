@@ -110,7 +110,7 @@ const Chat = () => {
         <div className="user-header">
           <h2>Hello, {localStorage.getItem('username') || 'User'}</h2>
           <div className="connection-status">
-            Status: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+            {isConnected ? '🟢' : '🔴'}
           </div>
           <button onClick={handleLogout} className="logout-button">
             Logout
@@ -124,14 +124,17 @@ const Chat = () => {
             <ul>
               {users.map(user => (
                 <li
-                  key={user._id}
-                  className={selectedUser === user._id ? 'active' : ''}
-                  onClick={() => setSelectedUser(user._id)}
-                >
-                  <span className={`user-status ${user.online ? 'online' : 'offline'}`}></span>
-                  {user.username}
-                  {user.online && <span className="online-badge">Online</span>}
-                </li>
+                key={user._id}
+                className={selectedUser === user._id ? 'active' : ''}
+                onClick={() => setSelectedUser(user._id)}
+              >
+                {user.online ? (
+                  <span className="online-badge">🟢 </span>
+                ) : (
+                  <span className="offline-badge">🔴 </span>
+                )}
+                {user.username}
+              </li>
               ))}
             </ul>
           )}

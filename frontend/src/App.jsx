@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Chat from './pages/Chat';
 import Register from './pages/Register';
+import VerifyOTP from './pages/verifyOTP'
 import { SocketProvider } from './context/SocketContext';
 
 function App() {
@@ -10,6 +11,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify" element={<VerifyOTP />} />
+
         <Route
           path="/chat"
           element={

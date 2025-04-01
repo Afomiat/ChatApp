@@ -1,15 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import '../styles/register.css';
+import '../styles/Login.css';
 
 export default function Register() {
   const [formData, setFormData] = useState({
     username: '',
-    password: '',
-    confirmpass: ''
+    email: '',
+    password: ''
   });
-
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -26,41 +25,35 @@ export default function Register() {
     setIsLoading(true);
     setError('');
 
-    if (formData.confirmpass !== formData.password) {
-      setError('Passwords do not match.');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // Clear previous session
-      localStorage.clear();
-
       const response = await axios.post('http://localhost:8080/register', {
         username: formData.username,
+        email: formData.email,
         password: formData.password
       });
 
-      // Store only what we need for authentication
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('username', formData.username);
-
-      // Immediate navigation to chat
-      navigate('/chat', { replace: true });
-
+      if (response.status === 200) {
+        navigate('/verify', { 
+          state: { 
+            email: formData.email,
+            username: formData.username,
+            password: formData.password
+          } 
+        });
+      } else {
+        throw new Error(response.data?.error || 'Registration failed');
+      }
     } catch (err) {
-      localStorage.clear();
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
-      console.error('Register error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <h1>Chat App</h1>
+    <div className="login-container">
+      <div className="login-card">
+        <h1>Create Account</h1>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleRegister}>
           <input
@@ -73,6 +66,15 @@ export default function Register() {
             disabled={isLoading}
           />
           <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Email"
+            required
+            disabled={isLoading}
+          />
+          <input
             type="password"
             name="password"
             value={formData.password}
@@ -81,25 +83,16 @@ export default function Register() {
             required
             disabled={isLoading}
           />
-          <input
-            type="password"
-            name="confirmpass"
-            value={formData.confirmpass}
-            onChange={handleChange}
-            placeholder="Confirm Password"
-            required
-            disabled={isLoading}
-          />
           <button 
             type="submit" 
-            className="register-button"
+            className="login-button"
             disabled={isLoading}
           >
-            {isLoading ? 'Registering ...' : 'Register'}
+            {isLoading ? 'Registering...' : 'Register'}
           </button>
         </form>
-        <p className="login-link">
-          Already have an account? <span onClick={() => navigate('/login')} className="login-text">Login</span>
+        <p className="register-link">
+          Already have an account? <span onClick={() => navigate('/')} className="register-text">Login</span>
         </p>
       </div>
     </div>
